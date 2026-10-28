@@ -1,0 +1,6 @@
+﻿Host,Datacenter,Cluster,Config status,in Maintenance Mode,CPU Model,Speed,HT Available,HT Active,# CPU,Cores per CPU,# Cores,CPU usage %,# Memory,Memory usage %,# NICs,# HBAs,# VMs total,# VMs,ESX Version,Vendor,Model,VI SDK Server
+esx01.muster.local,RZ-Zentrale,Produktion,green,False,Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz,2700,True,True,2,12,24,38,524288,43,4,2,11,11,VMware ESXi 7.0.3 build-21424296,Dell Inc.,PowerEdge R650,vcenter.muster.local
+esx02.muster.local,RZ-Zentrale,Produktion,green,False,Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz,2700,True,True,2,12,24,36,524288,68,4,2,12,12,VMware ESXi 7.0.3 build-21424296,Dell Inc.,PowerEdge R650,vcenter.muster.local
+esx03.muster.local,RZ-Zentrale,Produktion,green,False,Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz,2700,True,True,2,12,24,32,524288,64,4,2,10,10,VMware ESXi 7.0.3 build-21424296,Dell Inc.,PowerEdge R650,vcenter.muster.local
+esx11.muster.local,Aussenstelle,Aussenstelle,green,False,AMD EPYC 9124 16-Core Processor,2700,True,True,1,16,16,23,262144,64,4,2,3,3,VMware ESXi 8.0.2 build-22380479,Dell Inc.,PowerEdge R650,vcenter.muster.local
+esx12.muster.local,Aussenstelle,Aussenstelle,green,False,AMD EPYC 9124 16-Core Processor,2700,True,True,1,16,16,35,262144,50,4,2,4,4,VMware ESXi 8.0.2 build-22380479,Dell Inc.,PowerEdge R650,vcenter.muster.local

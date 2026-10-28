@@ -1,0 +1,12 @@
+{
+  "name": "exitcheck",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Wertet RVTools-Exporte für den Umstieg von VMware auf Proxmox VE oder Hyper-V aus – vollständig im Browser.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "build": "node tools/build.mjs"
+  }
+}

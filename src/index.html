@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="{{CSP}}">
+<meta name="referrer" content="no-referrer">
+<title>{{APP_NAME}} – Umstieg von VMware prüfen</title>
+<meta name="description" content="Wertet einen RVTools-Export aus: Kostenvergleich VMware gegen Proxmox VE und Hyper-V, Stolpersteine je VM und Aufwandsschätzung. Läuft vollständig im Browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23ffd21f'/%3E%3Cpath d='M7 9h18M7 16h12M7 23h18' stroke='%2317212b' stroke-width='3'/%3E%3C/svg%3E">
+<style>{{STYLE}}</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap">
+    <a class="tape" href="#" id="home">{{APP_NAME}}</a>
+    <div class="toolbar" id="toolbar" hidden>
+      <div class="segmented" role="group" aria-label="Ziel des Umzugs">
+        <button type="button" data-target="proxmox" aria-pressed="true">Proxmox VE</button>
+        <button type="button" data-target="hyperv" aria-pressed="false">Hyper-V</button>
+      </div>
+      <label class="check"><input type="checkbox" id="anonymize"> Namen ausblenden</label>
+      <button type="button" class="btn" id="print">Drucken</button>
+      <button type="button" class="btn" id="csv">Als CSV speichern</button>
+      <button type="button" class="btn" id="again">Andere Datei</button>
+    </div>
+  </div>
+</header>
+
+<main id="start" class="start">
+  <div class="wrap">
+    <h1>Was kostet der Abschied von VMware – und was steht ihm im Weg?</h1>
+    <p class="lead">{{APP_NAME}} liest einen RVTools-Export und zeigt, was der Umzug Ihrer VMs zu Proxmox VE oder Hyper-V kostet, welche VMs Stolpersteine haben und wie viel Arbeit auf Sie zukommt.</p>
+
+    <div class="drop" id="drop">
+      <strong>RVTools-Export hier ablegen</strong>
+      <p class="hint">Excel-Datei (.xlsx) oder alle CSV-Dateien eines Exports. Mehrere vCenter: alle Dateien zusammen ablegen.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="choose">Datei auswählen</button>
+        <button type="button" class="btn" id="example">Mit Beispieldaten ansehen</button>
+      </div>
+      <p class="status-line" id="status" role="status" aria-live="polite"></p>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.csv" multiple hidden>
+
+    <p class="privacy">Ihre Daten bleiben auf diesem Rechner. Die Seite rechnet vollständig im Browser, lädt nichts nach und sendet nichts – abgesichert durch eine Content-Security-Policy, die jede Netzwerkverbindung verbietet. Sie funktioniert auch als heruntergeladene Datei ohne Internet.</p>
+
+    <div class="checks">
+      <section>
+        <h2>Kosten</h2>
+        <p>Broadcom-Lizenz nach Kernen gegen Proxmox-Subskription nach Sockeln und Hyper-V – mit Vorgabewerten, die Sie durch Ihre Angebote ersetzen.</p>
+      </section>
+      <section>
+        <h2>Stolpersteine</h2>
+        <p>Raw Device Mappings, gemeinsam genutzte Disks, Fault Tolerance, vTPM, USB-Dongles, Snapshots, vSAN, alte Betriebssysteme und mehr – für jede VM.</p>
+      </section>
+      <section>
+        <h2>Aufwand</h2>
+        <p>Eine nachvollziehbare Schätzung in Personentagen und die reine Kopierzeit für Ihre Datenmenge. Jede Annahme lässt sich anpassen.</p>
+      </section>
+    </div>
+
+    <section class="howto">
+      <h2>So entsteht der Export</h2>
+      <ol>
+        <li>RVTools auf einem Windows-Rechner starten und mit vCenter oder einem ESXi-Host verbinden.</li>
+        <li>Im Menü File den Punkt „Export all to Excel“ wählen.</li>
+        <li>Die gespeicherte Datei hier ablegen.</li>
+      </ol>
+    </section>
+  </div>
+</main>
+
+<main id="report" class="report" hidden></main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>{{APP_NAME}} {{VERSION}} ist Open Source (MIT-Lizenz): <a href="{{REPO_URL}}" rel="noopener">Quellcode auf GitHub</a>. Für den Einsatz ohne Internet: <a href="index.html" download="{{SLUG}}.html">diese Seite als Datei speichern</a>.</p>
+    <p>Kein Angebot von Broadcom, Microsoft, Proxmox oder Dell. VMware, vSphere, Hyper-V, Proxmox und RVTools sind Marken ihrer Inhaber. Ergebnisse sind Schätzungen ohne Gewähr.</p>
+  </div>
+</footer>
+
+<script type="text/plain" id="example-data">{{EXAMPLE}}</script>
+<script>{{SCRIPT}}</script>
+</body>
+</html>
