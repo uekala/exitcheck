@@ -413,6 +413,7 @@ function renderLimits() {
       <li><a href="https://knowledge.broadcom.com/external/article/459135/end-of-general-support-for-vsphere-80.html" rel="noopener">Broadcom: Ende des allgemeinen Supports für vSphere 8</a> – 11.10.2027.</li>
       <li>Broadcom lizenziert je Kern mit mindestens 16 Kernen pro CPU. Supportende von Betriebssystemen laut Lebenszyklus der Hersteller.</li>
     </ul>
+    <p><a href="${APP.repo}/blob/main/docs/anleitung.md" rel="noopener">Anleitung</a>: Export erstellen, Annahmen anpassen, Ergebnis weitergeben. Fehlt etwas oder wirken Zahlen falsch, freue ich mich über ein <a href="${APP.repo}/issues" rel="noopener">Issue</a> – bitte nur mit Spaltenüberschriften, ohne Daten aus der Umgebung.</p>
     ${APP.contact.text ? html`<p><a href="${APP.contact.url}" rel="noopener">${APP.contact.text}</a></p>` : ''}`);
 }
 

@@ -9,6 +9,7 @@ Exitcheck liest einen Export des kostenlosen Inventarwerkzeugs [RVTools](https:/
 - **Aufwand:** eine nachvollziehbare Schätzung in Personentagen und die reine Kopierzeit für die vorhandene Datenmenge
 
 **Ausprobieren:** <https://uekala.github.io/exitcheck/> – mit eigenem Export oder den eingebauten Beispieldaten.
+**Schritt für Schritt:** [Anleitung: Umgebung exportieren und auswerten](docs/anleitung.md)
 
 ![Bericht mit Beispieldaten](docs/bericht.png)
 
@@ -22,11 +23,12 @@ Wer ganz sicher gehen will, speichert die Seite (Link unten auf der Seite) und �
 
 ## So entsteht der Export
 
-1. RVTools auf einem Windows-Rechner starten und mit vCenter oder einem ESXi-Host verbinden.
-2. Im Menü *File* den Punkt *Export all to Excel* wählen.
-3. Die Datei in Exitcheck ablegen.
+1. [RVTools](https://www.dell.com/support/kbdoc/de-de/000325532/rv-4-8-1) auf einem Windows-Rechner installieren und mit einem Lesekonto am vCenter anmelden.
+2. Im Menü *File* den Punkt *Export all to Excel* wählen – bei mehreren vCentern für jeden.
+3. [Exitcheck](https://uekala.github.io/exitcheck/) öffnen und alle Exportdateien zusammen ablegen.
+4. Preise aus dem eigenen Angebot eintragen, Ziel wählen, Ergebnis prüfen und vor dem Weitergeben „Namen ausblenden“ einschalten.
 
-Auch die CSV-Dateien von *Export all to csv* funktionieren. Bei mehreren vCentern einfach alle Exporte zusammen ablegen.
+Alle Schritte mit Hinweisen zu Zertifikaten, Datenschutz und Fehlermeldungen stehen in der [Anleitung](docs/anleitung.md).
 
 ## Was geprüft wird
 
