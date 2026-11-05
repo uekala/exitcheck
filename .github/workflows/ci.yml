@@ -3,6 +3,7 @@ name: Prüfen und veröffentlichen
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -17,6 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check package, application and tag versions
+        run: node tools/check-version.mjs
       - name: Tests
         run: npm test
       - name: Seite bauen
