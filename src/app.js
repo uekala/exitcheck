@@ -3,6 +3,7 @@
 import { APP } from './config.js';
 import { analyse, modelFromExports, readExports } from './analyse.js';
 import { defaultSettings, PROXMOX_LEVELS, VMWARE_PRODUCTS } from './costs.js';
+import { asOfLabel, PRICES, priceSources } from './prices.js';
 import { LEVELS, TARGETS } from './rules.js';
 import { esxSupport } from './env.js';
 import { fmtDateDe, fmtDec, fmtEuro, fmtHours, fmtNum, fmtSize, html, plural, raw } from './format.js';
@@ -131,12 +132,12 @@ function renderReport() {
               ${numberField('years', 'Zeitraum in Jahren', { min: 1, max: 10 })}
               ${selectField('vmwareProduct', 'VMware-Produkt', Object.fromEntries(Object.entries(VMWARE_PRODUCTS).map(([k, v]) => [k, v.label])))}
               ${numberField('vmwarePricePerCore', 'VMware: € je Kern und Jahr')}
-              ${numberField('vmwareMinOrderCores', 'VMware: Mindestmenge in Kernen', { note: 'Händler nannten 2025 teils 72 Kerne; Broadcom bestätigt das öffentlich nicht. 0 = keine.' })}
+              ${numberField('vmwareMinOrderCores', 'VMware: Mindestmenge in Kernen', { note: `Händler nennen ${PRICES.vmwareMinOrder.value} Kerne (Stand ${asOfLabel(PRICES.vmwareMinOrder.asOf)}); Broadcom bestätigt das öffentlich nicht. 0 = keine.` })}
               ${selectField('proxmoxLevel', 'Proxmox-Supportstufe', Object.fromEntries(Object.entries(PROXMOX_LEVELS).map(([k, v]) => [k, `${v.label} (${v.price} €)`])))}
               ${numberField('proxmoxPricePerSocket', 'Proxmox: € je CPU-Sockel und Jahr')}
               ${selectField('hypervHostsLicensed', 'Hyper-V: Hosts schon mit Windows Server lizenziert?', { auto: 'Automatisch (ja, wenn Windows-VMs laufen)', yes: 'Ja', no: 'Nein' })}
               ${numberField('hypervPricePerCore', 'Hyper-V: € je Kernlizenz, einmalig')}
-              <p class="note wide">Broadcom veröffentlicht keine Preisliste. Die Vorgaben sind berichtete US-Listenpreise (VCF 350, VVF 135, vSphere Standard 50 je Kern und Jahr) ohne Währungsumrechnung – tragen Sie Ihr Angebot ein. Proxmox: offizielle Preise je Sockel und Jahr, Stand Oktober 2026. Hyper-V: US-Listenpreis Windows Server 2025 Standard (1.176 $ je 16 Kerne).</p>
+              <p class="note wide">${priceNote()}</p>
             </div>
           </details>
         </section>
@@ -146,7 +147,7 @@ function renderReport() {
           <details class="assumptions">
             <summary>Stundensatz und Zeiten anpassen</summary>
             <div class="form">
-              ${numberField('rate', 'Stundensatz in €', { note: 'Vorgabe: Median IT-Infrastruktur laut Freelancer-Kompass 2026.' })}
+              ${numberField('rate', 'Stundensatz in €', { note: `Vorgabe: Median IT-Infrastruktur laut Freelancer-Kompass 2026 (Stand ${asOfLabel(PRICES.hourlyRate.asOf)}).` })}
               ${numberField('hoursWindows', 'Stunden je Windows-VM', { step: 0.25 })}
               ${numberField('hoursLinux', 'Stunden je Linux-VM', { step: 0.25 })}
               ${numberField('hoursOther', 'Stunden je sonstige VM', { step: 0.25 })}
@@ -396,6 +397,14 @@ function renderVms() {
     <tbody>${rows}</tbody></table></div>`);
 }
 
+const money = (price) => `${fmtNum(price.value)} ${price.currency === 'USD' ? '$' : '€'}`;
+
+/** Hinweis unter den Preisfeldern: Herkunft und Stand aller Vorgaben. */
+function priceNote() {
+  const { vmwareVcf: vcf, vmwareVvf: vvf, vmwareVvs: vvs, proxmoxBasic: pve, windowsServerStandard: win } = PRICES;
+  return `Broadcom veröffentlicht keine Preisliste. Die VMware-Vorgaben sind berichtete US-Listenpreise (VCF ${money(vcf)}, VVF ${money(vvf)}, vSphere Standard ${money(vvs)} je Kern und Jahr, Stand ${asOfLabel(vcf.asOf)}) ohne Währungsumrechnung – tragen Sie Ihr Angebot ein. Proxmox: offizielle Nettopreise je Sockel und Jahr, Stand ${asOfLabel(pve.asOf)}. Hyper-V: US-Listenpreis Windows Server 2025 Standard (${money(win)} je 16 Kerne, Stand ${asOfLabel(win.asOf)}). Quellen unter „Grenzen der Prüfung“.`;
+}
+
 function renderLimits() {
   const { gaps } = state.model;
   setHtml('limits-out', html`
@@ -409,10 +418,11 @@ function renderLimits() {
     <h3 class="subhead">Grundlagen</h3>
     <ul>
       <li><a href="https://pve.proxmox.com/wiki/Migrate_to_Proxmox_VE" rel="noopener">Proxmox-Wiki: Migrate to Proxmox VE</a> – Grenzen des ESXi-Imports und Vorbereitung der Gäste.</li>
-      <li><a href="https://www.proxmox.com/proxmox-ve/pricing" rel="noopener">Proxmox VE: Preise</a> – Subskription je CPU-Sockel und Jahr.</li>
       <li><a href="https://knowledge.broadcom.com/external/article/459135/end-of-general-support-for-vsphere-80.html" rel="noopener">Broadcom: Ende des allgemeinen Supports für vSphere 8</a> – 11.10.2027.</li>
       <li>Broadcom lizenziert je Kern mit mindestens 16 Kernen pro CPU. Supportende von Betriebssystemen laut Lebenszyklus der Hersteller.</li>
     </ul>
+    <h3 class="subhead">Quellen der Preisannahmen</h3>
+    <ul>${priceSources().map((s) => html`<li><a href="${s.url}" rel="noopener">${s.title}</a> – ${s.labels.join(', ')} (Stand ${asOfLabel(s.asOf)})</li>`)}</ul>
     <p><a href="${APP.repo}/blob/main/docs/anleitung.md" rel="noopener">Anleitung</a>: Export erstellen, Annahmen anpassen, Ergebnis weitergeben. Fehlt etwas oder wirken Zahlen falsch, freue ich mich über ein <a href="${APP.repo}/issues" rel="noopener">Issue</a> – bitte nur mit Spaltenüberschriften, ohne Daten aus der Umgebung.</p>
     ${APP.contact.text ? html`<p><a href="${APP.contact.url}" rel="noopener">${APP.contact.text}</a></p>` : ''}`);
 }

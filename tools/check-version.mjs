@@ -25,6 +25,15 @@ if (packageVersion !== appVersion) {
   );
 }
 
+const changelog = readFileSync('CHANGELOG.md', 'utf8');
+const changelogVersion = (changelog.match(/^##\s+(\d+\.\d+\.\d+)\b/m) || [])[1];
+if (changelogVersion !== packageVersion) {
+  throw new Error(
+    'CHANGELOG.md starts at ' + (changelogVersion || 'no version heading') +
+    ', package.json is ' + packageVersion
+  );
+}
+
 const ref = process.env.GITHUB_REF || '';
 if (ref.startsWith('refs/tags/')) {
   const tagVersion = ref.slice('refs/tags/'.length).replace(/^v/, '');
@@ -33,4 +42,4 @@ if (ref.startsWith('refs/tags/')) {
   }
 }
 
-console.log('Exitcheck version ' + packageVersion + ': package, app and tag are consistent.');
+console.log('Exitcheck version ' + packageVersion + ': package, app, changelog and tag are consistent.');
