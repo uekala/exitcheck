@@ -20,8 +20,10 @@ jobs:
           node-version: 22
       - name: Check package, application and tag versions
         run: node tools/check-version.mjs
-      - name: Tests
-        run: npm test
+      - name: Tests mit Abdeckung
+        run: npm run coverage
+      - name: Alter der Preisannahmen
+        run: node tools/check-prices.mjs
       - name: Seite bauen
         run: npm run build
       - name: Browser-Test

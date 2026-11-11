@@ -1,18 +1,20 @@
 // Kostenvergleich und Aufwandsschätzung. Alle Preise sind Eingaben mit Vorgabewerten,
-// die im Bericht als Annahme ausgewiesen werden.
+// die im Bericht als Annahme ausgewiesen werden. Werte, Stand und Quellen: prices.js.
+
+import { PRICES } from './prices.js';
 
 export const VMWARE_PRODUCTS = {
-  vcf: { label: 'VMware Cloud Foundation (VCF)', price: 350 },
-  vvf: { label: 'VMware vSphere Foundation (VVF)', price: 135 },
-  vvs: { label: 'vSphere Standard', price: 50 },
+  vcf: { label: PRICES.vmwareVcf.label, price: PRICES.vmwareVcf.value },
+  vvf: { label: PRICES.vmwareVvf.label, price: PRICES.vmwareVvf.value },
+  vvs: { label: PRICES.vmwareVvs.label, price: PRICES.vmwareVvs.value },
   custom: { label: 'Eigener Preis', price: null },
 };
 
 export const PROXMOX_LEVELS = {
-  community: { label: 'Community', price: 120 },
-  basic: { label: 'Basic', price: 370 },
-  standard: { label: 'Standard', price: 550 },
-  premium: { label: 'Premium', price: 1100 },
+  community: { label: 'Community', price: PRICES.proxmoxCommunity.value },
+  basic: { label: 'Basic', price: PRICES.proxmoxBasic.value },
+  standard: { label: 'Standard', price: PRICES.proxmoxStandard.value },
+  premium: { label: 'Premium', price: PRICES.proxmoxPremium.value },
 };
 
 export function defaultSettings() {
@@ -26,9 +28,9 @@ export function defaultSettings() {
     proxmoxPricePerSocket: PROXMOX_LEVELS.basic.price,
     // Sind die Hosts schon mit Windows Server lizenziert (wegen Windows-VMs), kostet Hyper-V nichts extra
     hypervHostsLicensed: 'auto',
-    // US-Listenpreis Windows Server 2025 Standard: 1.176 $ je 16 Kerne
-    hypervPricePerCore: Math.round(1176 / 16),
-    rate: 95,
+    // US-Listenpreis Windows Server 2025 Standard je 16 Kerne, auf einen Kern umgerechnet
+    hypervPricePerCore: Math.round(PRICES.windowsServerStandard.value / 16),
+    rate: PRICES.hourlyRate.value,
     hoursLinux: 1,
     hoursWindows: 2,
     hoursOther: 2,

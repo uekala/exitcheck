@@ -60,11 +60,13 @@ Alle Preise sind Vorgaben, die sich im Bericht ändern lassen – am besten durc
 
 | Posten | Vorgabe | Grundlage |
 |--------|---------|-----------|
-| VMware | 135 € je Kern und Jahr (VVF), mindestens 16 Kerne je CPU | Broadcom veröffentlicht keine Preisliste; berichtete US-Listenpreise: VCF 350, VVF 135, vSphere Standard 50 |
-| Mindestmenge VMware | 0 Kerne | Händler nannten 2025 teils 72 Kerne; Broadcom bestätigt das öffentlich nicht |
+| VMware | 135 € je Kern und Jahr (VVF), mindestens 16 Kerne je CPU | Broadcom veröffentlicht keine Preisliste; berichtete US-Listenpreise: VCF 350, VVF 135, vSphere Standard 50, Stand November 2026 |
+| Mindestmenge VMware | 0 Kerne | Händler nennen 72 Kerne; Broadcom bestätigt das öffentlich nicht |
 | Proxmox VE | 370 € je Sockel und Jahr (Basic) | [offizielle Preise](https://www.proxmox.com/proxmox-ve/pricing), Stand Oktober 2026 |
-| Hyper-V | keine Zusatzkosten, wenn die Hosts wegen Windows-VMs schon mit Windows Server lizenziert sind; sonst Windows Server Standard, 74 € je Kern einmalig | US-Listenpreis 1.176 $ je 16 Kerne |
-| Umzug | 95 € je Stunde | Median IT-Infrastruktur im Freelancer-Kompass 2026 |
+| Hyper-V | keine Zusatzkosten, wenn die Hosts wegen Windows-VMs schon mit Windows Server lizenziert sind; sonst Windows Server Standard, 74 € je Kern einmalig | [US-Listenpreis](https://www.microsoft.com/en-us/windows-server/pricing) 1.176 $ je 16 Kerne, Stand November 2026 |
+| Umzug | 95 € je Stunde | Median IT-Infrastruktur im [Freelancer-Kompass 2026](https://www.freelancermap.de/blog/stundensatz-it-freelancer/), Stand Juli 2026 |
+
+Alle Quellen, Hinweise zur Währung und der Ablauf zum Aktualisieren: [Preisannahmen](docs/preise.md).
 
 Nicht enthalten sind Hardware, Backup-Software, Schulung und laufender Betrieb. Windows-Lizenzen für Windows-VMs braucht jede Variante; sie sind deshalb nicht eingerechnet.
 
@@ -80,6 +82,7 @@ Ohne Abhängigkeiten zur Laufzeit: Der xlsx-Leser ist Teil des Projekts und nutz
 
 ```bash
 npm test                       # Tests mit node:test (Node 22)
+npm run coverage               # Tests mit Abdeckungsbericht und Mindestwerten
 npm run build                  # baut dist/index.html
 node tests/browser.e2e.mjs     # Browser-Test, braucht Playwright
 python3 tools/make_example.py  # erzeugt die erfundenen Beispieldaten neu (openpyxl)
