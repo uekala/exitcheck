@@ -34,6 +34,21 @@ assert.match(verdict, /Von 40 VMs ziehen 37 um/);
 assert.match(await page.textContent('#head-out'), /vcenter\.muster\.local/);
 if (shots) await page.screenshot({ path: `${shots}/2-bericht.png`, fullPage: true });
 
+// Aufräumen
+const cleanup = await page.textContent('#cleanup-out');
+assert.match(cleanup, /Konsolidierung nötig/);
+assert.match(cleanup, /Snapshots älter als 3 Tage/);
+assert.match(cleanup, /alt-crm\.vmdk/);
+assert.match(await page.textContent('#summary-out .facts'), /Zum Aufräumen/);
+await page.click('#aufraeumen summary');
+await page.fill('[data-setting="snapshotDays"]', '500');
+assert.doesNotMatch(await page.textContent('#cleanup-out'), /Snapshots älter als/);
+await page.fill('[data-setting="snapshotDays"]', '3');
+const [cleanupDownload] = await Promise.all([page.waitForEvent('download'), page.click('#cleanup-csv')]);
+const cleanupCsv = readFileSync(await cleanupDownload.path(), 'utf8');
+assert.match(cleanupCsv, /^\uFEFFStufe;Fundstelle;Art;Name/);
+assert.match(cleanupCsv, /Dringend;Konsolidierung nötig;VM;file01/);
+
 // Filter und Detailzeile
 await page.click('[data-filter="block"]');
 assert.equal(await page.locator('#vm-out tbody tr').count(), 4);
@@ -55,7 +70,7 @@ assert.match(await page.textContent('#costs-out'), /128.000/); // 128 Kerne × 2
 // Namen ausblenden
 await page.check('#anonymize');
 const body = await page.textContent('#report');
-for (const secret of ['sql01', 'esx01.muster.local', 'vcenter.muster.local', 'NFS+Archiv', 'Aussenstelle']) {
+for (const secret of ['sql01', 'esx01.muster.local', 'vcenter.muster.local', 'NFS+Archiv', 'Aussenstelle', 'SAN-02', 'file01', 'alt-crm', 'test-migration']) {
   assert.ok(!body.includes(secret), `Name sichtbar trotz Ausblenden: ${secret}`);
 }
 
@@ -64,6 +79,9 @@ const [download] = await Promise.all([page.waitForEvent('download'), page.click(
 const csv = readFileSync(await download.path(), 'utf8');
 assert.match(csv, /^﻿VM;Status;Betriebssystem/);
 assert.ok(!csv.includes('sql01'));
+const [cleanupHidden] = await Promise.all([page.waitForEvent('download'), page.click('#cleanup-csv')]);
+const cleanupHiddenCsv = readFileSync(await cleanupHidden.path(), 'utf8');
+for (const secret of ['file01', 'SAN-02', 'NFS+Archiv', 'alt-crm']) assert.ok(!cleanupHiddenCsv.includes(secret), `Name in Aufräumliste: ${secret}`);
 
 // Beispieldaten und Handy-Breite
 await page.click('#again');

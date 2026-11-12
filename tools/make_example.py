@@ -54,7 +54,7 @@ VMS = [
     ("vcsa01", "photon", 4, 19, 600, "Produktion", "SAN-01", {"appliance": True}),
     ("dc01", "w2022", 2, 8, 100, "Produktion", "SAN-01", {}),
     ("dc02", "w2022", 2, 8, 100, "Aussenstelle", "vsanDatastore", {}),
-    ("file01", "w2019", 4, 16, 2048, "Produktion", "SAN-02", {"snapshots": [400, 3]}),
+    ("file01", "w2019", 4, 16, 2048, "Produktion", "SAN-02", {"snapshots": [400, 3], "consolidate": True}),
     ("sql01", "w2019", 8, 64, 800, "Produktion", "SAN-01", {"shared": True, "rdm": "physicalMode"}),
     ("sql02", "w2019", 8, 64, 800, "Produktion", "SAN-02", {"shared": True, "rdm": "physicalMode"}),
     ("erp01", "w2016", 8, 48, 600, "Produktion", "SAN-01", {"ft": True}),
@@ -65,7 +65,7 @@ VMS = [
     ("app-alt", "w2012", 2, 8, 120, "Produktion", "NFS+Archiv", {"power": "poweredOff"}),
     ("web01", "ubuntu", 2, 4, 40, "Produktion", "SAN-01", {}),
     ("web02", "ubuntu", 2, 4, 40, "Produktion", "SAN-02", {}),
-    ("mail01", "debian11", 4, 8, 300, "Produktion", "SAN-01", {"snapshots": [12]}),
+    ("mail01", "debian11", 4, 8, 300, "Produktion", "SAN-01", {"snapshots": [12, 9, 5, 2]}),
     ("monitor01", "centos7", 2, 4, 80, "Produktion", "SAN-02", {}),
     ("git01", "ubuntu", 4, 8, 250, "Produktion", "SAN-01", {"efi": True, "secure": True}),
     ("backup01", "w2022", 4, 16, 100, "Produktion", "SAN-02", {"rdm": "virtualMode"}),
@@ -126,7 +126,7 @@ def build() -> dict[str, tuple[list[str], list[list]]]:
         rows_info.append([
             name, power, template, False, "green", f"{name}.muster.local" if running else "",
             "orphaned" if extra.get("orphaned") else "connected", "running" if running else "notRunning",
-            "green" if running else "gray", False, cpus, ram * 1024, 1 + (1 if name.startswith("backup") else 0),
+            "green" if running else "gray", bool(extra.get("consolidate")), cpus, ram * 1024, 1 + (1 if name.startswith("backup") else 0),
             2 if extra.get("rdm") else 1, disk_mib, "normal", f"10.0.{10 + n // 50}.{10 + n}" if running else "",
             network, "running" if extra.get("ft") else "notConfigured", "1" if extra.get("ft") else "",
             disk_mib + ram * 1024, in_use, "efi" if extra.get("efi") else "bios", bool(extra.get("secure")),
@@ -193,11 +193,19 @@ def build() -> dict[str, tuple[list[str], list[list]]]:
     rows_ds = []
     for name, kind, cap in DATASTORES:
         used = int(cap * rng.uniform(0.4, 0.75))
+        if name == "NFS+Archiv":
+            used = int(cap * 0.93)  # fast voll, für den Aufräum-Bericht
         rows_ds.append([name, "green", True, kind, 0, 0, cap, used, used, cap - used, round((cap - used) / cap * 100),
                         2 if kind == "vsan" else 3, "", "Aussenstelle" if kind == "vsan" else "Produktion", VCENTER])
     data["vDatastore"] = (["Name", "Config status", "Accessible", "Type", "# VMs total", "# VMs", "Capacity MiB",
                            "Provisioned MiB", "In Use MiB", "Free MiB", "Free %", "# Hosts", "Hosts", "Cluster name",
                            "VI SDK Server"], rows_ds)
+    # Hinweise wie in RVTools: zwei verwaiste Disk-Dateien und ein anderer Hinweis
+    data["vHealth"] = (["Name", "Message", "Message type", "VI SDK Server"], [
+        ["[SAN-02] alt-crm/alt-crm.vmdk", "Possibly a Zombie vmdk file! Please check.", "Zombie", VCENTER],
+        ["[SAN-01] test-migration/test-migration_1.vmdk", "Possibly a Zombie vmdk file! Please check.", "Zombie", VCENTER],
+        ["esx12.muster.local", "No NTP servers configured.", "NTP", VCENTER],
+    ])
     data["vCluster"] = (["Name", "Config status", "NumHosts", "HA enabled", "DRS enabled", "VI SDK Server"],
                         [["Produktion", "green", 3, True, True, VCENTER], ["Aussenstelle", "green", 2, True, False, VCENTER]])
     data["vLicense"] = (["Name", "Key", "Labels", "Cost Unit", "Total", "Used", "Expiration Date", "Features", "VI SDK Server"],

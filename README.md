@@ -7,6 +7,7 @@ Exitcheck liest einen Export des kostenlosen Inventarwerkzeugs [RVTools](https:/
 - **Kosten:** Broadcom-Lizenz nach Kernen gegen Proxmox-VE-Subskription nach Sockeln und Hyper-V, über einen frei wählbaren Zeitraum und inklusive Umzug
 - **Stolpersteine:** für jede VM, was den Umzug verhindert oder Mehrarbeit macht
 - **Aufwand:** eine nachvollziehbare Schätzung in Personentagen und die reine Kopierzeit für die vorhandene Datenmenge
+- **Aufräumen:** alte Snapshots, möglicherweise verwaiste Dateien, ausgeschaltete VMs, Vorlagen und fast volle Datastores – mit dem Speicher, den sie belegen
 
 **Ausprobieren:** <https://uekala.github.io/exitcheck/> – mit eigenem Export oder den eingebauten Beispieldaten.
 **Schritt für Schritt:** [Anleitung: Umgebung exportieren und auswerten](docs/anleitung.md)
@@ -54,6 +55,22 @@ Für die Umgebung meldet Exitcheck außerdem das Supportende der ESXi-Versionen,
 
 Grundlage für Proxmox ist vor allem die Anleitung [Migrate to Proxmox VE](https://pve.proxmox.com/wiki/Migrate_to_Proxmox_VE).
 
+## Aufräumen
+
+Was vor dem Umzug (oder einfach so) weg kann. Exitcheck löscht nichts; jede Fundstelle ist vor dem Löschen zu prüfen. Das Alter von Snapshots zählt ab dem Export.
+
+| Fundstelle | Quelle im Export | Vorgabe, im Bericht änderbar |
+|------------|------------------|------------------------------|
+| Konsolidierung nötig | vInfo | immer |
+| Datastore fast voll | vDatastore | unter 10 % frei |
+| Alte Snapshots | vSnapshot | älter als 3 Tage ([Broadcom: höchstens 72 Stunden](https://knowledge.broadcom.com/external/article/318825/best-practices-for-using-vmware-snapshots.html)) |
+| Lange Snapshot-Ketten | vSnapshot | mehr als 3 je VM (Broadcom: 2 bis 3) |
+| Möglicherweise verwaiste Dateien | vHealth („Zombie“) | immer |
+| Ausgeschaltete VMs, Vorlagen | vInfo | immer, zum Prüfen |
+| Eingelegte ISO-Abbilder | vCD | immer |
+
+Seit wann eine VM ausgeschaltet ist und wie groß verwaiste Dateien sind, steht nicht im Export. Die Aufräumliste lässt sich als CSV speichern, auf Wunsch mit ausgeblendeten Namen.
+
 ## Kostenmodell
 
 Alle Preise sind Vorgaben, die sich im Bericht ändern lassen – am besten durch das eigene Angebot.
@@ -92,7 +109,7 @@ Der Quellcode liegt als ES-Module in `src/`; `tools/build.mjs` setzt sie mit Sty
 
 ## English
 
-Exitcheck analyses an RVTools export entirely in the browser and compares VMware (Broadcom per-core subscription) with Proxmox VE and Hyper-V, lists migration blockers per VM and estimates the effort. No data leaves the machine: the page is a single HTML file whose Content-Security-Policy forbids all network connections. The interface is in German.
+Exitcheck analyses an RVTools export entirely in the browser and compares VMware (Broadcom per-core subscription) with Proxmox VE and Hyper-V, lists migration blockers per VM, estimates the effort and lists cleanup candidates (old snapshots, possible zombie files, powered-off VMs, templates, nearly full datastores). No data leaves the machine: the page is a single HTML file whose Content-Security-Policy forbids all network connections. The interface is in German.
 
 ## Lizenz
 

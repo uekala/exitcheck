@@ -6,6 +6,7 @@ import { defaultSettings, PROXMOX_LEVELS, VMWARE_PRODUCTS } from './costs.js';
 import { asOfLabel, PRICES, priceSources } from './prices.js';
 import { LEVELS, TARGETS } from './rules.js';
 import { esxSupport } from './env.js';
+import { CLEANUP_LEVELS } from './cleanup.js';
 import { fmtDateDe, fmtDec, fmtEuro, fmtHours, fmtNum, fmtSize, html, plural, raw } from './format.js';
 
 const STORAGE_KEY = `${APP.slug}.einstellungen.v1`;
@@ -65,7 +66,9 @@ function buildNames(model) {
   add(model.vms.map((v) => v.name), 'VM-', 3);
   add(model.hosts.map((h) => h.name), 'Host-', 2);
   add([...model.hosts.map((h) => h.cluster), ...model.vms.map((v) => v.cluster)], 'Cluster-', 1);
-  add([...model.datastores.map((d) => d.name), ...model.vms.flatMap((v) => [v.datastore, ...v.disks.map((d) => d.datastore)])], 'Datastore-', 2);
+  add([...model.datastores.map((d) => d.name), ...model.vms.flatMap((v) => [v.datastore, ...v.disks.map((d) => d.datastore)]), ...model.health.map((h) => h.datastore)], 'Datastore-', 2);
+  // Pfade verwaister Dateien enthalten alte VM-Namen
+  add(model.health.filter((h) => h.datastore).map((h) => h.name), 'Datei-', 2);
   add(model.vms.flatMap((v) => v.nics.map((n) => n.network)), 'Netz-', 2);
   add([...model.hosts.map((h) => h.datacenter), ...model.vms.map((v) => v.datacenter)], 'Standort-', 1);
   add([...model.sources.map((s) => s.name), ...model.vms.map((v) => v.vcenter)], 'vCenter-', 1);
@@ -114,6 +117,7 @@ function renderReport() {
     <div class="layout">
       <nav class="toc" aria-label="Abschnitte"><ol>
         <li><a href="#ueberblick">Überblick</a></li>
+        <li><a href="#aufraeumen">Aufräumen</a></li>
         <li><a href="#kosten">Kosten</a></li>
         <li><a href="#aufwand">Aufwand</a></li>
         <li><a href="#stolpersteine">Stolpersteine</a></li>
@@ -123,6 +127,18 @@ function renderReport() {
       </ol></nav>
       <div>
         <section class="section summary" id="ueberblick"><h2 class="visually-hidden">Überblick</h2><div id="summary-out"></div></section>
+        <section class="section" id="aufraeumen">
+          <h2>Aufräumen</h2>
+          <div id="cleanup-out"></div>
+          <details class="assumptions">
+            <summary>Schwellen anpassen</summary>
+            <div class="form">
+              ${numberField('snapshotDays', 'Snapshots älter als … Tage', { note: 'Broadcom empfiehlt höchstens 72 Stunden.' })}
+              ${numberField('snapshotChain', 'Mehr als … Snapshots je VM', { note: 'Broadcom empfiehlt 2 bis 3.' })}
+              ${numberField('datastoreFreePct', 'Datastore fast voll unter … % frei', { max: 100 })}
+            </div>
+          </details>
+        </section>
         <section class="section" id="kosten">
           <h2>Kosten</h2>
           <div id="costs-out"></div>
@@ -191,6 +207,7 @@ function update() {
   }
   renderHead();
   renderSummary();
+  renderCleanup();
   renderCosts();
   renderEffort();
   renderGroups();
@@ -239,7 +256,55 @@ function renderSummary() {
       <div><dt>Physische Kerne</dt><dd>${fmtNum(costs.physicalCores)}</dd></div>
       <div><dt>Belegter Speicher</dt><dd>${fmtSize(effort.inUseMiB)}</dd></div>
       <div><dt>Geschätzter Aufwand</dt><dd>${fmtDec(effort.days)} Personentage</dd></div>
+      <div><dt><a href="#aufraeumen">Zum Aufräumen</a></dt><dd>${fmtSize(state.result.cleanup.totals.totalMiB)}</dd></div>
     </dl>`);
+}
+
+const cleanupName = (entry) => n(entry.name);
+
+function cleanupEntries(item) {
+  const sizeHead = item.sizeLabel === 'frei' ? 'Frei' : 'Belegt';
+  const hasSize = item.entries.some((e) => e.sizeMiB !== null);
+  const hasDetail = item.entries.some((e) => e.detail);
+  const row = (e) => html`<tr><td class="${e.kind === 'file' ? 'path' : ''}">${cleanupName(e)}</td>${hasDetail ? html`<td>${e.kind === 'file' ? n(e.detail) || '–' : e.detail || '–'}</td>` : ''}${hasSize ? html`<td class="num">${e.sizeMiB === null ? '–' : fmtSize(e.sizeMiB)}</td>` : ''}</tr>`;
+  const head = html`<thead><tr><th>${{ vm: 'VM', datastore: 'Datastore', file: 'Datei' }[item.entries[0].kind]}</th>${hasDetail ? html`<th>${item.entries[0].kind === 'file' ? 'Datastore' : 'Angabe'}</th>` : ''}${hasSize ? html`<th class="num">${sizeHead}</th>` : ''}</tr></thead>`;
+  const table = (entries) => html`<div class="table-wrap"><table class="compact">${head}<tbody>${entries.map(row)}</tbody></table></div>`;
+  const limit = 8;
+  if (item.entries.length <= limit) return table(item.entries);
+  return html`${table(item.entries.slice(0, limit))}
+    <details><summary>Alle ${fmtNum(item.entries.length)} anzeigen</summary>${table(item.entries.slice(limit))}</details>`;
+}
+
+function renderCleanup() {
+  const { items, totals } = state.result.cleanup;
+  const parts = [];
+  if (totals.snapshotsMiB) parts.push(html`alte Snapshots <strong>${fmtSize(totals.snapshotsMiB)}</strong>`);
+  if (totals.offMiB) parts.push(html`ausgeschaltete VMs <strong>${fmtSize(totals.offMiB)}</strong>`);
+  if (totals.templateMiB) parts.push(html`Vorlagen <strong>${fmtSize(totals.templateMiB)}</strong>`);
+  const joined = parts.flatMap((p, i) => (i === 0 ? [p] : [i === parts.length - 1 ? ' und ' : ', ', p]));
+  const lead = parts.length
+    ? html`Zum Prüfen belegen ${joined}${totals.zombieFiles ? html`, dazu ${plural(totals.zombieFiles, 'möglicherweise verwaiste Datei', 'möglicherweise verwaiste Dateien')} unbekannter Größe` : ''}.`
+    : totals.zombieFiles
+      ? html`${plural(totals.zombieFiles, 'möglicherweise verwaiste Datei', 'möglicherweise verwaiste Dateien')} unbekannter Größe.`
+      : '';
+  const reference = state.model.meta.exportedAt ? ` Stand des Exports vom ${fmtDateDe(state.model.meta.exportedAt)}.` : '';
+  if (!items.length) {
+    setHtml('cleanup-out', html`<p class="intro">Was Speicher belegt und vermutlich niemand mehr braucht.${reference}</p>
+      <p>Nichts gefunden: keine alten Snapshots, keine verwaisten Dateien, keine ausgeschalteten VMs oder Vorlagen.</p>`);
+    return;
+  }
+  setHtml('cleanup-out', html`
+    <p class="intro">Was Speicher belegt und vermutlich niemand mehr braucht.${reference} Exitcheck löscht nichts: Jede Fundstelle ist vor dem Löschen zu prüfen. ${CLEANUP_LEVELS.block}: bald handeln. ${CLEANUP_LEVELS.effort}: mit wenig Aufwand erledigt. ${CLEANUP_LEVELS.note}: mit den Verantwortlichen klären.</p>
+    ${lead ? html`<p class="verdict-line">${lead}</p>` : ''}
+    <div class="groups">${items.map((item) => html`
+      <article class="group">
+        <div class="group-head">${tag(item.level, CLEANUP_LEVELS[item.level])}<h3>${item.title}</h3><span class="count">${fmtNum(item.entries.length)}${item.sizeMiB && item.sizeLabel !== 'frei' ? ` · ${fmtSize(item.sizeMiB)}` : ''}</span></div>
+        <p class="why">${item.why}</p>
+        <p class="fix">Was tun: ${item.fix}</p>
+        ${cleanupEntries(item)}
+      </article>`)}
+    </div>
+    <p><button type="button" class="btn" id="cleanup-csv">Aufräumliste als CSV speichern</button></p>`);
 }
 
 function renderCosts() {
@@ -413,11 +478,13 @@ function renderLimits() {
     <ul>
       <li>Anwendungen und ihre Abhängigkeiten, Lizenzen innerhalb der VMs (z. B. an Hardware gebundene Software) und das Backup-Konzept.</li>
       <li>Ziele, die über Bereiche, Geräte-IDs oder Skripte festgelegt sind, sowie Verschlüsselung im Gast (BitLocker ohne vTPM).</li>
+      <li>Seit wann eine VM ausgeschaltet ist und wie groß verwaiste Dateien sind – beides steht nicht im Export.</li>
       <li>Ob Hardware, Speicher und Netz für das Ziel taugen. Die Kosten gehen davon aus, dass die vorhandenen Hosts weiterlaufen.</li>
     </ul>
     <h3 class="subhead">Grundlagen</h3>
     <ul>
       <li><a href="https://pve.proxmox.com/wiki/Migrate_to_Proxmox_VE" rel="noopener">Proxmox-Wiki: Migrate to Proxmox VE</a> – Grenzen des ESXi-Imports und Vorbereitung der Gäste.</li>
+      <li><a href="https://knowledge.broadcom.com/external/article/318825/best-practices-for-using-vmware-snapshots.html" rel="noopener">Broadcom: Best practices for using VMware snapshots</a> – höchstens 72 Stunden, 2 bis 3 Snapshots je VM.</li>
       <li><a href="https://knowledge.broadcom.com/external/article/459135/end-of-general-support-for-vsphere-80.html" rel="noopener">Broadcom: Ende des allgemeinen Supports für vSphere 8</a> – 11.10.2027.</li>
       <li>Broadcom lizenziert je Kern mit mindestens 16 Kernen pro CPU. Supportende von Betriebssystemen laut Lebenszyklus der Hersteller.</li>
     </ul>
@@ -446,15 +513,32 @@ function exportCsv() {
       findings.filter((f) => f.level !== 'note').map((f) => t(f.fix)).join(' | '),
     ]);
   }
-  const text = `﻿${lines.map((row) => row.map(csvCell).join(';')).join('\r\n')}`;
+  download(`﻿${lines.map((row) => row.map(csvCell).join(';')).join('\r\n')}`, `${APP.slug}-${state.settings.target}.csv`);
+}
+
+function download(text, fileName) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${APP.slug}-${state.settings.target}.csv`;
+  a.download = fileName;
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportCleanupCsv() {
+  const lines = [['Stufe', 'Fundstelle', 'Art', 'Name', 'Angabe', 'Belegt bzw. frei GiB', 'Was tun']];
+  for (const item of state.result.cleanup.items) {
+    for (const e of item.entries) {
+      lines.push([
+        CLEANUP_LEVELS[item.level], item.title, { vm: 'VM', datastore: 'Datastore', file: 'Datei' }[e.kind],
+        cleanupName(e), e.kind === 'file' ? n(e.detail) : e.detail,
+        e.sizeMiB === null ? '' : Math.round(e.sizeMiB / 1024), item.fix,
+      ]);
+    }
+  }
+  download(`\uFEFF${lines.map((row) => row.map(csvCell).join(';')).join('\r\n')}`, `${APP.slug}-aufraeumen.csv`);
 }
 
 /* ---------- Laden ---------- */
@@ -602,6 +686,10 @@ function init() {
     }
   });
   report.addEventListener('click', (e) => {
+    if (e.target.closest('#cleanup-csv')) {
+      exportCleanupCsv();
+      return;
+    }
     const chip = e.target.closest('[data-filter]');
     if (chip) {
       state.filter = chip.dataset.filter;

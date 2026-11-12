@@ -14,7 +14,7 @@ const read = (path) => readFileSync(join(root, path), 'utf8');
 const base64 = (path) => readFileSync(join(root, path)).toString('base64');
 
 const MODULES = [
-  'config', 'values', 'os', 'zip', 'xlsx', 'csv', 'rvtools', 'rules', 'env', 'prices', 'costs', 'analyse', 'format', 'app',
+  'config', 'values', 'os', 'zip', 'xlsx', 'csv', 'rvtools', 'rules', 'env', 'prices', 'costs', 'cleanup', 'analyse', 'format', 'app',
 ];
 
 function bundle() {

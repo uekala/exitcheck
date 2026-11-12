@@ -40,6 +40,10 @@ export function defaultSettings() {
     projectDays: 3,
     daysPerHost: 0.5,
     throughputMBs: 150,
+    // Aufräum-Bericht; Snapshots nach Broadcom-Empfehlung (höchstens 72 Stunden, 2 bis 3 je VM)
+    snapshotDays: 3,
+    snapshotChain: 3,
+    datastoreFreePct: 10,
   };
 }
 

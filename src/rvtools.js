@@ -136,6 +136,8 @@ function findGaps(tables) {
     ['vUSB', null, 'Durchgereichte USB-Geräte (z. B. Lizenzdongles) können nicht erkannt werden.'],
     ['vDatastore', null, 'vSAN-Datastores können nicht erkannt werden.'],
     ['vNetwork', null, 'Netzwerke und durchgereichte Netzwerkkarten können nicht erkannt werden.'],
+    ['vHealth', null, 'Möglicherweise verwaiste Dateien können nicht erkannt werden.'],
+    ['vCD', null, 'Eingelegte ISO-Abbilder können nicht erkannt werden.'],
     ['vInfo', ['vTPM', 'Has vTPM', 'TPM'], 'Der Export enthält keine vTPM-Angabe – bei Windows 11 und Server 2025 prüfen, ob ein vTPM und BitLocker im Einsatz sind.'],
     ['vInfo', ['VM Encryption', 'Encryption', 'Encrypted'], 'Der Export enthält keine Angabe zur VM-Verschlüsselung – verschlüsselte VMs bitte von Hand prüfen.'],
   ];
@@ -221,6 +223,17 @@ export function buildModel(tables) {
     expiration: str(pick(row, 'Expiration Date')),
   })).filter((l) => l.name);
 
+  // Hinweise aus dem Blatt vHealth, z. B. „Possibly a Zombie vmdk file! Please check.“
+  const health = t('vHealth').rows.map((row) => {
+    const name = str(pick(row, 'Name', 'Entity'));
+    return {
+      name,
+      message: str(pick(row, 'Message')),
+      type: str(pick(row, 'Message type', 'Type')),
+      datastore: datastoreOfPath(name),
+    };
+  }).filter((h) => h.name || h.message);
+
   const metaRow = t('vMetaData').rows[0] ?? {};
   const sources = t('vSource').rows.map((row) => ({
     name: str(pick(row, 'Name', 'VI SDK Server')),
@@ -232,6 +245,7 @@ export function buildModel(tables) {
     hosts,
     datastores,
     licenses,
+    health,
     sources,
     meta: {
       rvtoolsVersion: str(pick(metaRow, 'RVTools version', 'RVTools major version')),

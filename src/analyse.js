@@ -6,6 +6,7 @@ import { buildModel, mergeSheets } from './rvtools.js';
 import { checkVm, skipReason, verdict } from './rules.js';
 import { checkEnvironment } from './env.js';
 import { compareCosts, estimateEffort } from './costs.js';
+import { checkCleanup } from './cleanup.js';
 
 // Titel, die je VM variieren, bekommen in der Übersicht einen festen Namen
 const GROUP_TITLES = {
@@ -77,5 +78,7 @@ export function analyse(model, settings, today = new Date()) {
   const order = { block: 0, effort: 1, note: 2 };
   const groups = [...byRule.values()].sort((a, b) => order[a.level] - order[b.level] || b.vms.length - a.vms.length);
 
-  return { vms, counts, effort, costs, environment, groups };
+  const cleanup = checkCleanup(model, settings, today);
+
+  return { vms, counts, effort, costs, environment, groups, cleanup };
 }
