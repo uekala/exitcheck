@@ -39,6 +39,8 @@ const cleanup = await page.textContent('#cleanup-out');
 assert.match(cleanup, /Konsolidierung nötig/);
 assert.match(cleanup, /Snapshots älter als 3 Tage/);
 assert.match(cleanup, /alt-crm\.vmdk/);
+assert.match(cleanup, /Thick-Disks mit viel freiem Platz/);
+assert.match(cleanup, /Gewinn \(geschätzt\)/);
 assert.match(await page.textContent('#summary-out .facts'), /Zum Aufräumen/);
 await page.click('#aufraeumen summary');
 await page.fill('[data-setting="snapshotDays"]', '500');

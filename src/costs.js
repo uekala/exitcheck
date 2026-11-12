@@ -44,6 +44,7 @@ export function defaultSettings() {
     snapshotDays: 3,
     snapshotChain: 3,
     datastoreFreePct: 10,
+    thinMinGiB: 10,
   };
 }
 

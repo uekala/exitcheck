@@ -44,8 +44,13 @@ test('Aufräumen: Fundstellen im Beispiel, schwerste zuerst', async () => {
   const { model, cleanup } = await example();
   assert.equal(model.health.length, 3);
   assert.deepEqual(cleanup.items.map((i) => i.id), [
-    'consolidation', 'datastore-full', 'old-snapshots', 'snapshot-chain', 'zombie-files', 'powered-off', 'templates', 'iso',
+    'consolidation', 'datastore-full', 'old-snapshots', 'snapshot-chain', 'zombie-files', 'thick-disks', 'powered-off', 'templates',
+    'empty-datastore', 'iso',
   ]);
+  assert.deepEqual(names(cleanup, 'thick-disks'), ['file01', 'erp01']);
+  assert.match(item(cleanup, 'thick-disks').entries[0].detail, /^1 Thick-Disk mit 2\.048 GiB, im Gast [\d.]+ GiB frei$/);
+  assert.deepEqual(names(cleanup, 'empty-datastore'), ['SAN-ALT']);
+  assert.equal(item(cleanup, 'empty-datastore').entries[0].sizeMiB, 600 * GiB);
   assert.deepEqual(names(cleanup, 'consolidation'), ['file01']);
   assert.deepEqual(names(cleanup, 'datastore-full'), ['NFS+Archiv']);
   assert.equal(item(cleanup, 'datastore-full').entries[0].detail, '7 % frei');
@@ -67,9 +72,10 @@ test('Aufräumen: Alter zählt ab dem Export, Speicher je Art', async () => {
   // file01: 400 Tage (20 GiB); mail01: 12, 9 und 5 Tage (je 2 GiB); 3 und 2 Tage sind nicht alt
   assert.equal(t.snapshotsMiB, 26 * GiB);
   assert.equal(t.templateMiB, 24 * GiB);
-  assert.equal(t.totalMiB, t.snapshotsMiB + t.offMiB + t.templateMiB);
+  assert.equal(t.totalMiB, t.snapshotsMiB + t.offMiB + t.templateMiB + t.thinMiB);
+  assert.deepEqual(t.parts.map((p) => p.label), ['alte Snapshots', 'ausgeschaltete VMs', 'Vorlagen', 'Thick-Disks (Gewinn geschätzt)']);
   assert.equal(t.zombieFiles, 2);
-  assert.equal(t.findings, 12);
+  assert.equal(t.findings, 15);
   assert.equal(t.healthKnown, true);
 });
 
@@ -115,6 +121,38 @@ test('Aufräumen: Vorlagen und ausgeschaltete VMs werden nicht doppelt gezählt'
   assert.equal(items.find((i) => i.id === 'datastore-full'), undefined, 'Datastore ohne Größe wird übersprungen');
   assert.deepEqual(items.find((i) => i.id === 'iso').entries.map((e) => e.name), ['cd-iso']);
   assert.equal(items.find((i) => i.id === 'zombie-files').entries.length, 2);
+});
+
+test('Aufräumen: Thick-Disks nur mit bekanntem freiem Platz, anteilig und ab Mindestgewinn', () => {
+  const ref = new Date('2026-11-01T00:00:00Z');
+  const disk = (capacityGiB, thin, raw = false) => ({ capacityMiB: capacityGiB * GiB, thin, raw });
+  const part = (freeGiB) => ({ capacityMiB: 0, freeMiB: freeGiB * GiB });
+  const model = {
+    meta: { exportedAt: ref },
+    gaps: [],
+    datastores: [{ name: 'ds', capacityMiB: 100 * GiB, inUseMiB: 10 * GiB, vmCount: 3 }],
+    vms: [
+      // Halb Thick, halb Thin: vom freien Platz zählt die Hälfte
+      vm('gemischt', { disks: [disk(100, false), disk(100, true)], partitions: [part(80), part(40)] }),
+      // Ohne Partitionen (keine VMware Tools) lässt sich nichts schätzen
+      vm('ohne-tools', { disks: [disk(500, false)], partitions: [] }),
+      // Unter dem Mindestgewinn von 10 GiB
+      vm('klein', { disks: [disk(40, false)], partitions: [part(8)] }),
+      // RDMs zählen nicht
+      vm('rdm', { disks: [disk(500, false, true)], partitions: [part(400)] }),
+      // Thin ist schon gut
+      vm('thin', { disks: [disk(500, true)], partitions: [part(400)] }),
+      // Mehr frei als die Disk groß ist (mehrere Partitionen gezählt): höchstens die Disk-Größe
+      vm('voll', { disks: [disk(50, false)], partitions: [part(60)] }),
+    ],
+  };
+  const { items, totals } = checkCleanup(model, {}, ref);
+  const thick = items.find((i) => i.id === 'thick-disks');
+  assert.deepEqual(thick.entries.map((e) => [e.name, e.sizeMiB / GiB]), [['gemischt', 60], ['voll', 50]]);
+  assert.equal(totals.thinMiB, 110 * GiB);
+  assert.equal(items.find((i) => i.id === 'empty-datastore'), undefined);
+  const { items: strict } = checkCleanup(model, { thinMinGiB: 5 }, ref);
+  assert.ok(strict.find((i) => i.id === 'thick-disks').entries.some((e) => e.name === 'klein'));
 });
 
 test('Aufräumen: ohne Exportdatum zählt heute, ohne vHealth keine verwaisten Dateien', async () => {

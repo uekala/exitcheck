@@ -12,9 +12,10 @@ Alle nennenswerten Änderungen an Exitcheck. Versionen folgen [Semantic Versioni
 ### Neu
 
 - Abschnitt „Aufräumen“: Konsolidierung nötig, fast volle Datastores, Snapshots älter als 3 Tage, mehr als 3 Snapshots je VM, möglicherweise verwaiste Dateien (vHealth), ausgeschaltete VMs, Vorlagen und eingelegte ISO-Abbilder – jeweils mit belegtem Speicher. Schwellen im Bericht änderbar, Aufräumliste als CSV, „Namen ausblenden“ gilt auch für Dateipfade.
+- Aufräumen: Thick-Disks mit viel freiem Platz im Gast (geschätzter Gewinn durch Thin-Umstellung, aus vPartition) und Datastores ohne VMs.
 - Der Überblick nennt den Speicher, der zum Aufräumen geprüft werden sollte.
 - Fehlen die Blätter vHealth oder vCD, nennt der Bericht das unter „Grenzen der Prüfung“.
-- Beispieldaten um verwaiste Dateien, eine Konsolidierung, eine lange Snapshot-Kette und einen fast vollen Datastore ergänzt.
+- Beispieldaten um verwaiste Dateien, eine Konsolidierung, eine lange Snapshot-Kette und einen fast vollen Datastore, Thick-Disks, Partitionen und einen leeren Datastore ergänzt.
 - `docs/preise.md`: Übersicht der Preisannahmen und Ablauf zum Aktualisieren.
 - `npm run coverage`: Tests mit Abdeckungsbericht und Mindestwerten (Zeilen 90 %, Zweige 80 %, Funktionen 90 %); läuft in der CI.
 - `tools/check-prices.mjs` warnt in der CI, wenn eine Preisannahme älter als sechs Monate ist.

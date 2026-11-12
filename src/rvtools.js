@@ -84,6 +84,7 @@ function buildVm(row, index) {
     vcenter: str(pick(row, 'VI SDK Server')),
     primaryIp: str(pick(row, 'Primary IP Address')),
     disks: [],
+    partitions: [],
     snapshots: [],
     usb: [],
     cds: [],
@@ -138,6 +139,7 @@ function findGaps(tables) {
     ['vNetwork', null, 'Netzwerke und durchgereichte Netzwerkkarten können nicht erkannt werden.'],
     ['vHealth', null, 'Möglicherweise verwaiste Dateien können nicht erkannt werden.'],
     ['vCD', null, 'Eingelegte ISO-Abbilder können nicht erkannt werden.'],
+    ['vPartition', null, 'Der Platzgewinn durch Thin-Disks lässt sich nicht schätzen.'],
     ['vInfo', ['vTPM', 'Has vTPM', 'TPM'], 'Der Export enthält keine vTPM-Angabe – bei Windows 11 und Server 2025 prüfen, ob ein vTPM und BitLocker im Einsatz sind.'],
     ['vInfo', ['VM Encryption', 'Encryption', 'Encrypted'], 'Der Export enthält keine Angabe zur VM-Verschlüsselung – verschlüsselte VMs bitte von Hand prüfen.'],
   ];
@@ -162,6 +164,7 @@ export function buildModel(tables) {
       label: str(pick(row, 'Disk', 'Label')),
       capacityMiB: num(pick(row, 'Capacity MiB', 'Capacity MB')) ?? 0,
       raw: bool(pick(row, 'Raw')) === true,
+      thin: bool(pick(row, 'Thin')),
       rawMode: str(pick(row, 'Raw Comp. Mode', 'Raw Comp Mode', 'Compatibility Mode')),
       mode: str(pick(row, 'Disk Mode')),
       sharing: str(pick(row, 'Sharing mode', 'Sharing', 'Disk Sharing')),
@@ -169,6 +172,14 @@ export function buildModel(tables) {
       controller: str(pick(row, 'Controller')),
       datastore: datastoreOfPath(diskPath),
       path: diskPath,
+    });
+  });
+  attach(vms, t('vPartition'), (vm, row) => {
+    const capacityMiB = num(pick(row, 'Capacity MiB', 'Capacity MB')) ?? 0;
+    const consumedMiB = num(pick(row, 'Consumed MiB', 'Consumed MB'));
+    vm.partitions.push({
+      capacityMiB,
+      freeMiB: num(pick(row, 'Free MiB', 'Free MB')) ?? (consumedMiB !== null ? Math.max(0, capacityMiB - consumedMiB) : 0),
     });
   });
   attach(vms, t('vSnapshot'), (vm, row) => {
@@ -212,6 +223,7 @@ export function buildModel(tables) {
     type: str(pick(row, 'Type')),
     capacityMiB: num(pick(row, 'Capacity MiB', 'Capacity MB')) ?? 0,
     inUseMiB: num(pick(row, 'In Use MiB', 'In Use MB')) ?? 0,
+    vmCount: num(pick(row, '# VMs', '# VMs total')),
     vcenter: str(pick(row, 'VI SDK Server')),
   })).filter((d) => d.name);
   const licenses = t('vLicense').rows.map((row) => ({

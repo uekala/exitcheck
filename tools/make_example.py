@@ -54,10 +54,10 @@ VMS = [
     ("vcsa01", "photon", 4, 19, 600, "Produktion", "SAN-01", {"appliance": True}),
     ("dc01", "w2022", 2, 8, 100, "Produktion", "SAN-01", {}),
     ("dc02", "w2022", 2, 8, 100, "Aussenstelle", "vsanDatastore", {}),
-    ("file01", "w2019", 4, 16, 2048, "Produktion", "SAN-02", {"snapshots": [400, 3], "consolidate": True}),
+    ("file01", "w2019", 4, 16, 2048, "Produktion", "SAN-02", {"snapshots": [400, 3], "consolidate": True, "thick": True}),
     ("sql01", "w2019", 8, 64, 800, "Produktion", "SAN-01", {"shared": True, "rdm": "physicalMode"}),
     ("sql02", "w2019", 8, 64, 800, "Produktion", "SAN-02", {"shared": True, "rdm": "physicalMode"}),
-    ("erp01", "w2016", 8, 48, 600, "Produktion", "SAN-01", {"ft": True}),
+    ("erp01", "w2016", 8, 48, 600, "Produktion", "SAN-01", {"ft": True, "thick": True}),
     ("lic01", "w2016", 2, 4, 60, "Produktion", "SAN-02", {"usb": 1}),
     ("rdsh01", "w2022", 8, 64, 200, "Produktion", "SAN-01", {}),
     ("rdsh02", "w2022", 8, 64, 200, "Produktion", "SAN-02", {}),
@@ -113,6 +113,7 @@ def build() -> dict[str, tuple[list[str], list[list]]]:
         "VM ID", "VM UUID", "VI SDK Server",
     ]
     rows_info, rows_disk, rows_snap, rows_tools, rows_usb, rows_cd, rows_net = [], [], [], [], [], [], []
+    rows_part = []
     for n, (name, os_key, cpus, ram, disk, cluster, ds, extra) in enumerate(VMS):
         power = extra.get("power", "poweredOn")
         template = extra.get("template", False)
@@ -136,7 +137,11 @@ def build() -> dict[str, tuple[list[str], list[list]]]:
         ])
         ident = [vm_id, uuid, VCENTER]
         rows_disk.append([name, power, template, "Hard disk 1", disk_mib, False, "persistent",
-                          "sharingNone", True, "SCSI controller 0", "noSharing", "", "", f"[{ds}] {name}/{name}.vmdk", *ident])
+                          "sharingNone", not extra.get("thick"), "SCSI controller 0", "noSharing", "", "", f"[{ds}] {name}/{name}.vmdk", *ident])
+        if running:
+            # Partition im Gast: belegt etwa so viel wie die VM im Datastore
+            rows_part.append([name, power, template, "C:\\" if conf_os.startswith("Microsoft") else "/", disk_mib,
+                              min(in_use, disk_mib), disk_mib - min(in_use, disk_mib), *ident])
         if extra.get("rdm"):
             shared = extra.get("shared", False)
             rows_disk.append([name, power, template, "Hard disk 2", 500 * 1024, True,
@@ -166,6 +171,8 @@ def build() -> dict[str, tuple[list[str], list[list]]]:
     data["vInfo"] = (info_h, rows_info)
     data["vDisk"] = (["VM", "Powerstate", "Template", "Disk", "Capacity MiB", "Raw", "Disk Mode", "Sharing mode", "Thin",
                       "Controller", "Shared Bus", "Raw LUN ID", "Raw Comp. Mode", "Path", "VM ID", "VM UUID", "VI SDK Server"], rows_disk)
+    data["vPartition"] = (["VM", "Powerstate", "Template", "Disk", "Capacity MiB", "Consumed MiB", "Free MiB",
+                           "VM ID", "VM UUID", "VI SDK Server"], rows_part)
     data["vSnapshot"] = (["VM", "Powerstate", "Name", "Description", "Date / time", "Filename", "Size MiB (vmsn)",
                           "Size MiB (total)", "Quiesced", "State", "VM ID", "VM UUID", "VI SDK Server"], rows_snap)
     data["vTools"] = (["VM", "Powerstate", "Template", "VM Version", "Tools", "Tools Version", "Required Version",
@@ -195,8 +202,13 @@ def build() -> dict[str, tuple[list[str], list[list]]]:
         used = int(cap * rng.uniform(0.4, 0.75))
         if name == "NFS+Archiv":
             used = int(cap * 0.93)  # fast voll, für den Aufräum-Bericht
-        rows_ds.append([name, "green", True, kind, 0, 0, cap, used, used, cap - used, round((cap - used) / cap * 100),
+        vms_here = sum(1 for v in rows_info if v[25].startswith(f"[{name}]"))
+        rows_ds.append([name, "green", True, kind, vms_here, vms_here, cap, used, used, cap - used, round((cap - used) / cap * 100),
                         2 if kind == "vsan" else 3, "", "Aussenstelle" if kind == "vsan" else "Produktion", VCENTER])
+    # Ein alter Datastore ohne VMs, auf dem noch Dateien liegen
+    cap = 4 * 1024 * 1024
+    rows_ds.append(["SAN-ALT", "green", True, "VMFS", 0, 0, cap, 600 * 1024, 600 * 1024, cap - 600 * 1024,
+                    round((cap - 600 * 1024) / cap * 100), 3, "", "Produktion", VCENTER])
     data["vDatastore"] = (["Name", "Config status", "Accessible", "Type", "# VMs total", "# VMs", "Capacity MiB",
                            "Provisioned MiB", "In Use MiB", "Free MiB", "Free %", "# Hosts", "Hosts", "Cluster name",
                            "VI SDK Server"], rows_ds)

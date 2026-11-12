@@ -66,10 +66,12 @@ Was vor dem Umzug (oder einfach so) weg kann. Exitcheck löscht nichts; jede Fun
 | Alte Snapshots | vSnapshot | älter als 3 Tage ([Broadcom: höchstens 72 Stunden](https://knowledge.broadcom.com/external/article/318825/best-practices-for-using-vmware-snapshots.html)) |
 | Lange Snapshot-Ketten | vSnapshot | mehr als 3 je VM (Broadcom: 2 bis 3) |
 | Möglicherweise verwaiste Dateien | vHealth („Zombie“) | immer |
+| Thick-Disks mit viel freiem Platz im Gast | vDisk, vPartition | ab 10 GiB geschätztem Gewinn |
+| Datastores ohne VMs | vDatastore | immer |
 | Ausgeschaltete VMs, Vorlagen | vInfo | immer, zum Prüfen |
 | Eingelegte ISO-Abbilder | vCD | immer |
 
-Seit wann eine VM ausgeschaltet ist und wie groß verwaiste Dateien sind, steht nicht im Export. Die Aufräumliste lässt sich als CSV speichern, auf Wunsch mit ausgeblendeten Namen.
+Der Gewinn durch Thin-Disks ist geschätzt: freier Platz der Partitionen im Gast, anteilig auf die Thick-Disks gerechnet; ohne VMware Tools fehlen die Partitionen. Seit wann eine VM ausgeschaltet ist und wie groß verwaiste Dateien sind, steht nicht im Export. Die Aufräumliste lässt sich als CSV speichern, auf Wunsch mit ausgeblendeten Namen.
 
 ## Kostenmodell
 

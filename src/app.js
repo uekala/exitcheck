@@ -136,6 +136,7 @@ function renderReport() {
               ${numberField('snapshotDays', 'Snapshots älter als … Tage', { note: 'Broadcom empfiehlt höchstens 72 Stunden.' })}
               ${numberField('snapshotChain', 'Mehr als … Snapshots je VM', { note: 'Broadcom empfiehlt 2 bis 3.' })}
               ${numberField('datastoreFreePct', 'Datastore fast voll unter … % frei', { max: 100 })}
+              ${numberField('thinMinGiB', 'Thick-Disks ab … GiB geschätztem Gewinn')}
             </div>
           </details>
         </section>
@@ -263,7 +264,7 @@ function renderSummary() {
 const cleanupName = (entry) => n(entry.name);
 
 function cleanupEntries(item) {
-  const sizeHead = item.sizeLabel === 'frei' ? 'Frei' : 'Belegt';
+  const sizeHead = { frei: 'Frei', gewinn: 'Gewinn (geschätzt)' }[item.sizeLabel] ?? 'Belegt';
   const hasSize = item.entries.some((e) => e.sizeMiB !== null);
   const hasDetail = item.entries.some((e) => e.detail);
   const row = (e) => html`<tr><td class="${e.kind === 'file' ? 'path' : ''}">${cleanupName(e)}</td>${hasDetail ? html`<td>${e.kind === 'file' ? n(e.detail) || '–' : e.detail || '–'}</td>` : ''}${hasSize ? html`<td class="num">${e.sizeMiB === null ? '–' : fmtSize(e.sizeMiB)}</td>` : ''}</tr>`;
@@ -277,10 +278,7 @@ function cleanupEntries(item) {
 
 function renderCleanup() {
   const { items, totals } = state.result.cleanup;
-  const parts = [];
-  if (totals.snapshotsMiB) parts.push(html`alte Snapshots <strong>${fmtSize(totals.snapshotsMiB)}</strong>`);
-  if (totals.offMiB) parts.push(html`ausgeschaltete VMs <strong>${fmtSize(totals.offMiB)}</strong>`);
-  if (totals.templateMiB) parts.push(html`Vorlagen <strong>${fmtSize(totals.templateMiB)}</strong>`);
+  const parts = totals.parts.filter((p) => p.mib > 0).map((p) => html`${p.label} <strong>${fmtSize(p.mib)}</strong>`);
   const joined = parts.flatMap((p, i) => (i === 0 ? [p] : [i === parts.length - 1 ? ' und ' : ', ', p]));
   const lead = parts.length
     ? html`Zum Prüfen belegen ${joined}${totals.zombieFiles ? html`, dazu ${plural(totals.zombieFiles, 'möglicherweise verwaiste Datei', 'möglicherweise verwaiste Dateien')} unbekannter Größe` : ''}.`
@@ -528,7 +526,7 @@ function download(text, fileName) {
 }
 
 function exportCleanupCsv() {
-  const lines = [['Stufe', 'Fundstelle', 'Art', 'Name', 'Angabe', 'Belegt bzw. frei GiB', 'Was tun']];
+  const lines = [['Stufe', 'Fundstelle', 'Art', 'Name', 'Angabe', 'GiB (belegt, frei oder Gewinn)', 'Was tun']];
   for (const item of state.result.cleanup.items) {
     for (const e of item.entries) {
       lines.push([

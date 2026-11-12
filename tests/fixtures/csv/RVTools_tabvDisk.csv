@@ -2,12 +2,12 @@
 vcsa01,poweredOn,False,Hard disk 1,614400,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-01] vcsa01/vcsa01.vmdk,vm-1001,50030000-aaaa-bbbb-cccc-000000000000,vcenter.muster.local
 dc01,poweredOn,False,Hard disk 1,102400,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-01] dc01/dc01.vmdk,vm-1002,50030001-aaaa-bbbb-cccc-000000000001,vcenter.muster.local
 dc02,poweredOn,False,Hard disk 1,102400,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[vsanDatastore] dc02/dc02.vmdk,vm-1003,50030002-aaaa-bbbb-cccc-000000000002,vcenter.muster.local
-file01,poweredOn,False,Hard disk 1,2097152,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-02] file01/file01.vmdk,vm-1004,50030003-aaaa-bbbb-cccc-000000000003,vcenter.muster.local
+file01,poweredOn,False,Hard disk 1,2097152,False,persistent,sharingNone,False,SCSI controller 0,noSharing,,,[SAN-02] file01/file01.vmdk,vm-1004,50030003-aaaa-bbbb-cccc-000000000003,vcenter.muster.local
 sql01,poweredOn,False,Hard disk 1,819200,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-01] sql01/sql01.vmdk,vm-1005,50030004-aaaa-bbbb-cccc-000000000004,vcenter.muster.local
 sql01,poweredOn,False,Hard disk 2,512000,True,independent_persistent,sharingMultiWriter,False,SCSI controller 1,physicalSharing,naa.600508b1001c0004,physicalMode,[SAN-01] sql01/sql01_1.vmdk,vm-1005,50030004-aaaa-bbbb-cccc-000000000004,vcenter.muster.local
 sql02,poweredOn,False,Hard disk 1,819200,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-02] sql02/sql02.vmdk,vm-1006,50030005-aaaa-bbbb-cccc-000000000005,vcenter.muster.local
 sql02,poweredOn,False,Hard disk 2,512000,True,independent_persistent,sharingMultiWriter,False,SCSI controller 1,physicalSharing,naa.600508b1001c0005,physicalMode,[SAN-02] sql02/sql02_1.vmdk,vm-1006,50030005-aaaa-bbbb-cccc-000000000005,vcenter.muster.local
-erp01,poweredOn,False,Hard disk 1,614400,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-01] erp01/erp01.vmdk,vm-1007,50030006-aaaa-bbbb-cccc-000000000006,vcenter.muster.local
+erp01,poweredOn,False,Hard disk 1,614400,False,persistent,sharingNone,False,SCSI controller 0,noSharing,,,[SAN-01] erp01/erp01.vmdk,vm-1007,50030006-aaaa-bbbb-cccc-000000000006,vcenter.muster.local
 lic01,poweredOn,False,Hard disk 1,61440,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-02] lic01/lic01.vmdk,vm-1008,50030007-aaaa-bbbb-cccc-000000000007,vcenter.muster.local
 rdsh01,poweredOn,False,Hard disk 1,204800,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-01] rdsh01/rdsh01.vmdk,vm-1009,50030008-aaaa-bbbb-cccc-000000000008,vcenter.muster.local
 rdsh02,poweredOn,False,Hard disk 1,204800,False,persistent,sharingNone,True,SCSI controller 0,noSharing,,,[SAN-02] rdsh02/rdsh02.vmdk,vm-1010,50030009-aaaa-bbbb-cccc-000000000009,vcenter.muster.local
